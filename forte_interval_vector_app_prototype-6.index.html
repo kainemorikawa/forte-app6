@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forte / Interval Vector Explorer</title>
+  <style>
+    :root {
+      --bg1: #f8fafc;
+      --bg2: #e2e8f0;
+      --card: rgba(255,255,255,0.9);
+      --text: #0f172a;
+      --muted: #475569;
+      --line: #cbd5e1;
+      --accent: #0f172a;
+      --accent2: #334155;
+      --pill: #e2e8f0;
+      --shadow: 0 12px 36px rgba(15, 23, 42, 0.08);
+      --radius: 24px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .hero, .card {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.6);
+      backdrop-filter: blur(8px);
+      border-radius: 30px;
+      box-shadow: var(--shadow);
+    }
+    .hero { padding: 28px; margin-bottom: 20px; }
+    .badges { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .badge {
+      background: var(--pill);
+      color: var(--accent2);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    h1 { font-size: clamp(28px, 4vw, 42px); margin: 10px 0; }
+    .sub { color: var(--muted); line-height: 1.6; }
+    .grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+    }
+    .stack { display: grid; gap: 20px; }
+    .card { padding: 20px; }
+    .card h2 { margin: 0 0 14px; font-size: 21px; }
+    .label { font-size: 14px; color: var(--muted); margin-bottom: 8px; display: block; }
+    textarea, input[type="text"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-size: 16px;
+      background: white;
+      color: var(--text);
+    }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    button {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 16px;
+      padding: 10px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      color: var(--text);
+      transition: .18s ease;
+    }
+    button:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(15,23,42,.08); }
+    button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+    .info-list { display: grid; gap: 10px; font-size: 15px; }
+    .info-item strong { display: inline-block; min-width: 132px; }
+    .panel-grid { display: grid; gap: 20px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .svg-wrap { display: flex; justify-content: center; align-items: center; }
+    .metric { margin-bottom: 16px; }
+    .metric-head { display:flex; justify-content:space-between; font-size: 14px; margin-bottom: 8px; }
+    .track { height: 12px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+    .fill { height: 100%; background: linear-gradient(90deg, #0f172a, #475569); border-radius: 999px; }
+    .bars { display:grid; gap:14px; margin-top: 8px; }
+    .bar-row { display:grid; grid-template-columns: 44px 1fr 36px; gap: 12px; align-items:center; }
+    .bar-track { background:#e2e8f0; border-radius:999px; height:24px; overflow:hidden; }
+    .bar-fill { background: linear-gradient(90deg, #334155, #0f172a); height:100%; border-radius:999px; }
+    .tiny { font-size: 12px; color: var(--muted); line-height: 1.6; }
+    .zlist { display:grid; gap:12px; }
+    .zitem { border: 1px solid var(--line); border-radius: 18px; padding: 14px; background: rgba(255,255,255,0.75); }
+    .footer-note { margin-top: 18px; font-size: 13px; color: var(--muted); }
+    .top-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+    .small-btn { font-size: 13px; }
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+      .panel-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="badges">
+        <span class="badge">Post-tonal prototype</span>
+        <span class="badge">Prime Form + Interval Vector</span>
+        <span class="badge">Static HTML版</span>
+      </div>
+      <h1>Forte / Interval Vector Explorer</h1>
+      <div class="sub">
+        ピッチクラス集合を入力すると、normal order・prime form・interval vector・簡易キャラクター指標・PCクロック図を同時に可視化します。<br>
+        この版は <strong>1ファイルだけ</strong> で動くので、GitHub Pages / Netlify / Vercel に置けば <strong>URLを開くだけで使えるアプリ</strong> にできます。
+      </div>
+      <div class="top-actions">
+        <button class="primary" id="copyLinkGuide">公開手順を下に表示</button>
+        <button id="downloadHtml">HTMLを保存</button>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="stack">
+        <div class="card">
+          <h2>入力</h2>
+          <label class="label" for="pcInput">Pitch classes</label>
+          <input id="pcInput" type="text" value="0 1 4 7" placeholder="例: 0 1 4 7 または 0,2,4,6 または T E 0 4" />
+          <div class="row" style="margin-top:12px;">
+            <button data-preset="0 4 7">Major triad</button>
+            <button data-preset="0 3 7">Minor triad</button>
+            <button data-preset="0 3 6 9">Diminished seventh</button>
+            <button data-preset="0 2 4 6">Whole-tone tetrachord</button>
+            <button data-preset="0 1 2 3">Chromatic cluster</button>
+            <button data-preset="0 2 4 6 9 10">Mystic-like</button>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button class="primary" id="analyzeBtn">解析</button>
+            <button id="playChordBtn">和音を再生</button>
+            <button id="playArpeggioBtn">アルペジオ再生</button>
+            <button id="stopAudioBtn">停止</button>
+            <button id="clearBtn">クリア</button>
+            <button id="resetBtn">初期値</button>
+          </div>
+          <div class="tiny" style="margin-top:10px;">入力した pitch classes を C4 基準で再生します。和音再生は同時発音、アルペジオ再生は低い順に順次発音です。初回はブラウザの音声許可のため、再生ボタンを一度押してください。</div>
+        </div>
+
+        <div class="card">
+          <h2>集合情報</h2>
+          <div class="info-list" id="infoList"></div>
+        </div>
+
+        <div class="card">
+          <h2>URL公開の最短手順</h2>
+          <div class="tiny">
+            1. このファイルを <strong>index.html</strong> という名前で保存<br>
+            2. GitHub に新しいリポジトリを作る<br>
+            3. index.html をアップロードする<br>
+            4. GitHub Pages を ON にする<br>
+            5. 発行された URL を開けば完成
+          </div>
+          <div class="footer-note">Netlify Drop に index.html をドラッグしても、すぐURL化できます。</div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="panel-grid">
+          <div class="card">
+            <h2>Pitch-class clock</h2>
+            <div class="svg-wrap">
+              <svg id="clockSvg" viewBox="0 0 300 300" width="320" height="320" aria-label="Pitch class clock"></svg>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>簡易キャラクター軸</h2>
+            <div id="metrics"></div>
+            <div class="tiny">これは作曲分析向けの試験的ヒューリスティックです。厳密なForte分類そのものではなく、interval vector の分布から質感を近似しています。</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Interval vector</h2>
+          <div id="ivBadges" class="row" style="margin-bottom:16px;"></div>
+          <div id="bars" class="bars"></div>
+        </div>
+
+        <div class="card">
+          <h2>C4基準の譜面</h2>
+          <div class="tiny" style="margin-bottom:12px;">入力した pitch classes を C4=60 を基準にト音記号の五線へ表示します。表記はシャープ系です。</div>
+          <div class="svg-wrap">
+            <svg id="staffSvg" viewBox="0 0 760 220" width="100%" height="220" aria-label="Staff notation"></svg>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Z-relation候補</h2>
+          <div id="zList" class="zlist"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const mod = (n, m) => ((n % m) + m) % m;
+
+    function uniqueSorted(arr) {
+      return [...new Set(arr.map((n) => mod(Number(n), 12)))].sort((a, b) => a - b);
+    }
+
+    function parsePitchClasses(text) {
+      if (!text.trim()) return [];
+      return uniqueSorted(
+        text
+          .split(/[ ,，、]+/)
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((s) => {
+            const upper = s.toUpperCase();
+            if (upper === 'T') return 10;
+            if (upper === 'E') return 11;
+            const n = Number(upper);
+            return Number.isFinite(n) ? n : NaN;
+          })
+          .filter((n) => Number.isFinite(n))
+      );
+    }
+
+    function rotate(arr, i) { return arr.slice(i).concat(arr.slice(0, i)); }
+
+    function normalizeRotation(rot) {
+      const base = rot[0];
+      return rot.map((x) => mod(x - base, 12));
+    }
+
+    function comparePacked(a, b) {
+      const spanA = a[a.length - 1];
+      const spanB = b[b.length - 1];
+      if (spanA !== spanB) return spanA - spanB;
+      for (let i = a.length - 2; i >= 0; i--) {
+        if (a[i] !== b[i]) return a[i] - b[i];
+      }
+      return 0;
+    }
+
+    function normalOrder(set) {
+      if (set.length <= 1) return [...set];
+      const rots = set.map((_, i) => normalizeRotation(rotate(set, i)));
+      rots.sort(comparePacked);
+      return rots[0];
+    }
+
+    function invertSet(set) {
+      return uniqueSorted(set.map((x) => mod(-x, 12)));
+    }
+
+    function transposeToZero(arr) {
+      if (!arr.length) return [];
+      const first = arr[0];
+      return arr.map((x) => mod(x - first, 12));
+    }
+
+    function lexicographicCompare(a, b) {
+      const len = Math.max(a.length, b.length);
+      for (let i = 0; i < len; i++) {
+        const av = a[i] ?? Infinity;
+        const bv = b[i] ?? Infinity;
+        if (av !== bv) return av - bv;
+      }
+      return 0;
+    }
+
+    function primeForm(set) {
+      if (!set.length) return [];
+      const no = transposeToZero(normalOrder(set));
+      const inv = transposeToZero(normalOrder(invertSet(set)));
+      return lexicographicCompare(no, inv) <= 0 ? no : inv;
+    }
+
+    function intervalVector(set) {
+      const vec = [0, 0, 0, 0, 0, 0];
+      for (let i = 0; i < set.length; i++) {
+        for (let j = i + 1; j < set.length; j++) {
+          const d = mod(set[j] - set[i], 12);
+          const ic = Math.min(d, 12 - d);
+          if (ic >= 1 && ic <= 6) vec[ic - 1] += 1;
+        }
+      }
+      return vec;
+    }
+
+    function complement(set) {
+      const s = new Set(set);
+      return Array.from({ length: 12 }, (_, i) => i).filter((n) => !s.has(n));
+    }
+
+    function subsetsOfSize(arr, k) {
+      const result = [];
+      const path = [];
+      function walk(start) {
+        if (path.length === k) { result.push([...path]); return; }
+        for (let i = start; i < arr.length; i++) {
+          path.push(arr[i]);
+          walk(i + 1);
+          path.pop();
+        }
+      }
+      walk(0);
+      return result;
+    }
+
+    function zRelationCandidates(targetSet, cap = 8) {
+      const n = targetSet.length;
+      if (n < 3 || n > 9) return [];
+      const targetPF = JSON.stringify(primeForm(targetSet));
+      const targetIV = JSON.stringify(intervalVector(targetSet));
+      const all = subsetsOfSize(Array.from({ length: 12 }, (_, i) => i), n);
+      const matches = [];
+      for (const s of all) {
+        const pf = primeForm(s);
+        const iv = intervalVector(s);
+        if (JSON.stringify(iv) === targetIV && JSON.stringify(pf) !== targetPF) {
+          const pfKey = JSON.stringify(pf);
+          if (!matches.some((m) => JSON.stringify(m.primeForm) === pfKey)) {
+            matches.push({ set: s, primeForm: pf });
+          }
+        }
+        if (matches.length >= cap) break;
+      }
+      return matches;
+    }
+
+    function forteLikeLabel(pf) {
+      const map = {
+        '[0,1,2]': '3-1', '[0,1,3]': '3-2', '[0,1,4]': '3-3', '[0,1,5]': '3-4', '[0,1,6]': '3-5',
+        '[0,2,4]': '3-6', '[0,2,5]': '3-7', '[0,2,6]': '3-8', '[0,2,7]': '3-9', '[0,3,6]': '3-10',
+        '[0,3,7]': '3-11', '[0,4,8]': '3-12', '[0,1,2,3]': '4-1', '[0,1,2,4]': '4-2', '[0,1,3,4]': '4-3',
+        '[0,1,2,5]': '4-4', '[0,1,2,6]': '4-5', '[0,1,2,7]': '4-6', '[0,1,4,5]': '4-7', '[0,1,5,6]': '4-8',
+        '[0,1,6,7]': '4-9', '[0,2,3,5]': '4-10', '[0,1,3,5]': '4-11', '[0,2,3,6]': '4-12', '[0,1,3,6]': '4-13',
+        '[0,2,3,7]': '4-14', '[0,1,4,6]': '4-15', '[0,1,5,7]': '4-16', '[0,3,4,7]': '4-17', '[0,1,4,7]': '4-18',
+        '[0,1,4,8]': '4-19', '[0,1,5,8]': '4-20', '[0,2,4,6]': '4-21', '[0,2,4,7]': '4-22', '[0,2,5,7]': '4-23',
+        '[0,2,4,8]': '4-24', '[0,2,6,8]': '4-25', '[0,3,5,8]': '4-26', '[0,2,5,8]': '4-27', '[0,3,6,9]': '4-28'
+      };
+      return map[JSON.stringify(pf)] || '—';
+    }
+
+    function formatSet(arr) { return '{' + arr.join(', ') + '}'; }
+    function formatPrime(arr) { return '(' + arr.join(',') + ')'; }
+
+    function pcClockPositions(radius = 120) {
+      return Array.from({ length: 12 }, (_, i) => {
+        const angle = (Math.PI * 2 * i) / 12 - Math.PI / 2;
+        return { pc: i, x: 150 + radius * Math.cos(angle), y: 150 + radius * Math.sin(angle) };
+      });
+    }
+
+    function renderClock(selected) {
+      const svg = document.getElementById('clockSvg');
+      const selectedSet = new Set(selected);
+      const pos = pcClockPositions();
+      svg.innerHTML = '';
+
+      const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      ring.setAttribute('cx', 150); ring.setAttribute('cy', 150); ring.setAttribute('r', 120);
+      ring.setAttribute('fill', 'none'); ring.setAttribute('stroke', '#334155'); ring.setAttribute('stroke-opacity', '0.2'); ring.setAttribute('stroke-width', '2');
+      svg.appendChild(ring);
+
+      pos.forEach((p) => {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', 150); line.setAttribute('y1', 150); line.setAttribute('x2', p.x); line.setAttribute('y2', p.y);
+        line.setAttribute('stroke', '#64748b'); line.setAttribute('stroke-opacity', '0.15');
+        svg.appendChild(line);
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', p.x); circle.setAttribute('cy', p.y);
+        circle.setAttribute('r', selectedSet.has(p.pc) ? 18 : 14);
+        circle.setAttribute('fill', selectedSet.has(p.pc) ? '#0f172a' : 'transparent');
+        circle.setAttribute('fill-opacity', selectedSet.has(p.pc) ? '0.95' : '0');
+        circle.setAttribute('stroke', '#334155'); circle.setAttribute('stroke-opacity', '0.65');
+        svg.appendChild(circle);
+
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', p.x); text.setAttribute('y', p.y + 5); text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('font-size', '14'); text.setAttribute('font-weight', '600');
+        text.setAttribute('fill', selectedSet.has(p.pc) ? 'white' : '#0f172a');
+        text.textContent = String(p.pc);
+        svg.appendChild(text);
+      });
+
+      const center = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      center.setAttribute('cx', 150); center.setAttribute('cy', 150); center.setAttribute('r', 5);
+      center.setAttribute('fill', '#0f172a'); center.setAttribute('fill-opacity', '0.5');
+      svg.appendChild(center);
+    }
+
+    function pitchClassToStaffInfo(pc) {
+      const map = {
+        0: { name: 'C', accidental: '', diatonicIndex: 0 },
+        1: { name: 'C', accidental: '♯', diatonicIndex: 0 },
+        2: { name: 'D', accidental: '', diatonicIndex: 1 },
+        3: { name: 'D', accidental: '♯', diatonicIndex: 1 },
+        4: { name: 'E', accidental: '', diatonicIndex: 2 },
+        5: { name: 'F', accidental: '', diatonicIndex: 3 },
+        6: { name: 'F', accidental: '♯', diatonicIndex: 3 },
+        7: { name: 'G', accidental: '', diatonicIndex: 4 },
+        8: { name: 'G', accidental: '♯', diatonicIndex: 4 },
+        9: { name: 'A', accidental: '', diatonicIndex: 5 },
+        10: { name: 'A', accidental: '♯', diatonicIndex: 5 },
+        11: { name: 'B', accidental: '', diatonicIndex: 6 }
+      };
+      return map[pc];
+    }
+
+    function midiToStaffY(midi) {
+      const pc = mod(midi, 12);
+      const octave = Math.floor(midi / 12) - 1;
+      const info = pitchClassToStaffInfo(pc);
+      const c4Y = 170;
+      const staffStepOffset = (octave - 4) * 7 + info.diatonicIndex;
+      return c4Y - staffStepOffset * 10;
+    }
+
+    function staffLedgerLinesForY(y) {
+      const lines = [];
+      if (y > 150) {
+        for (let ledgerY = 170; ledgerY <= y; ledgerY += 20) {
+          lines.push(ledgerY);
+        }
+      }
+      if (y < 70) {
+        for (let ledgerY = 50; ledgerY >= y; ledgerY -= 20) {
+          lines.push(ledgerY);
+        }
+      }
+      return lines;
+    }
+
+    function renderStaffNotation(pcs) {
+      const svg = document.getElementById('staffSvg');
+      if (!svg) return;
+      svg.innerHTML = '';
+      const ns = 'http://www.w3.org/2000/svg';
+      const left = 90;
+      const right = 700;
+      const lineYs = [70, 90, 110, 130, 150];
+      const noteNames = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+
+      lineYs.forEach((y) => {
+        const line = document.createElementNS(ns, 'line');
+        line.setAttribute('x1', left);
+        line.setAttribute('x2', right);
+        line.setAttribute('y1', y);
+        line.setAttribute('y2', y);
+        line.setAttribute('stroke', '#334155');
+        line.setAttribute('stroke-width', '1.5');
+        svg.appendChild(line);
+      });
+
+      const clef = document.createElementNS(ns, 'text');
+      clef.setAttribute('x', 38);
+      clef.setAttribute('y', 132);
+      clef.setAttribute('font-size', '64');
+      clef.setAttribute('fill', '#0f172a');
+      clef.textContent = '𝄞';
+      svg.appendChild(clef);
+
+      const baseLabel = document.createElementNS(ns, 'text');
+      baseLabel.setAttribute('x', left);
+      baseLabel.setAttribute('y', 30);
+      baseLabel.setAttribute('font-size', '14');
+      baseLabel.setAttribute('fill', '#475569');
+      baseLabel.textContent = 'Treble staff / C4 basis';
+      svg.appendChild(baseLabel);
+
+      const sorted = [...pcs].sort((a, b) => a - b);
+      sorted.forEach((pc, index) => {
+        const midi = 60 + pc;
+        const info = pitchClassToStaffInfo(pc);
+        const y = midiToStaffY(midi);
+        const x = 150 + index * 62;
+
+        const note = document.createElementNS(ns, 'ellipse');
+        note.setAttribute('cx', x);
+        note.setAttribute('cy', y);
+        note.setAttribute('rx', 11);
+        note.setAttribute('ry', 8);
+        note.setAttribute('transform', `rotate(-20 ${x} ${y})`);
+        note.setAttribute('fill', '#0f172a');
+        svg.appendChild(note);
+
+        const stem = document.createElementNS(ns, 'line');
+        stem.setAttribute('x1', x + 9);
+        stem.setAttribute('x2', x + 9);
+        stem.setAttribute('y1', y);
+        stem.setAttribute('y2', y - 36);
+        stem.setAttribute('stroke', '#0f172a');
+        stem.setAttribute('stroke-width', '1.5');
+        svg.appendChild(stem);
+
+        if (info.accidental) {
+          const accidental = document.createElementNS(ns, 'text');
+          accidental.setAttribute('x', x - 24);
+          accidental.setAttribute('y', y + 5);
+          accidental.setAttribute('font-size', '22');
+          accidental.setAttribute('fill', '#0f172a');
+          accidental.textContent = info.accidental;
+          svg.appendChild(accidental);
+        }
+
+        staffLedgerLinesForY(y).forEach((ledgerY) => {
+          const ledger = document.createElementNS(ns, 'line');
+          ledger.setAttribute('x1', x - 16);
+          ledger.setAttribute('x2', x + 16);
+          ledger.setAttribute('y1', ledgerY);
+          ledger.setAttribute('y2', ledgerY);
+          ledger.setAttribute('stroke', '#334155');
+          ledger.setAttribute('stroke-width', '1.5');
+          svg.appendChild(ledger);
+        });
+
+        const label = document.createElementNS(ns, 'text');
+        label.setAttribute('x', x);
+        label.setAttribute('y', 205);
+        label.setAttribute('text-anchor', 'middle');
+        label.setAttribute('font-size', '12');
+        label.setAttribute('fill', '#475569');
+        label.textContent = `${noteNames[pc]}4`;
+        svg.appendChild(label);
+      });
+    }
+
+    let audioCtx = null;
+    let activeOscillators = [];
+    let audioStopTimer = null;
+
+    function pcToMidi(pc, baseMidi = 60) {
+      return baseMidi + pc;
+    }
+
+    function midiToFreq(midi) {
+      return 440 * Math.pow(2, (midi - 69) / 12);
+    }
+
+    function stopAudio() {
+      if (audioStopTimer) {
+        clearTimeout(audioStopTimer);
+        audioStopTimer = null;
+      }
+      activeOscillators.forEach((node) => {
+        try {
+          node.gain.gain.cancelScheduledValues(audioCtx.currentTime);
+          node.gain.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.08);
+          node.osc.stop(audioCtx.currentTime + 0.2);
+        } catch (e) {}
+      });
+      activeOscillators = [];
+    }
+
+    async function ensureAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    async function playPitchClassChord() {
+      const pcs = parsePitchClasses(document.getElementById('pcInput').value);
+      if (!pcs.length) return;
+      await ensureAudioContext();
+      stopAudio();
+
+      const now = audioCtx.currentTime;
+      const master = audioCtx.createGain();
+      master.gain.setValueAtTime(0.0001, now);
+      master.gain.linearRampToValueAtTime(0.18, now + 0.06);
+      master.gain.exponentialRampToValueAtTime(0.12, now + 0.5);
+      master.connect(audioCtx.destination);
+
+      pcs.forEach((pc, index) => {
+        const midi = pcToMidi(pc, 60);
+        const freq = midiToFreq(midi);
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = index % 2 === 0 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(0.12 / Math.max(1, pcs.length), now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.08 / Math.max(1, pcs.length), now + 0.4);
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(now);
+        activeOscillators.push({ osc, gain });
+      });
+
+      audioStopTimer = setTimeout(() => {
+        try { stopAudio(); } catch (e) {}
+      }, 2200);
+    }
+
+    async function playPitchClassArpeggio() {
+      const pcs = parsePitchClasses(document.getElementById('pcInput').value);
+      if (!pcs.length) return;
+      await ensureAudioContext();
+      stopAudio();
+
+      const now = audioCtx.currentTime;
+      const noteDur = 0.42;
+      const gap = 0.3;
+      const master = audioCtx.createGain();
+      master.gain.setValueAtTime(0.16, now);
+      master.connect(audioCtx.destination);
+
+      pcs.forEach((pc, index) => {
+        const start = now + index * gap;
+        const end = start + noteDur;
+        const midi = pcToMidi(pc, 60);
+        const freq = midiToFreq(midi);
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = index % 2 === 0 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.linearRampToValueAtTime(0.11, start + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.05, end - 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0001, end);
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(start);
+        osc.stop(end + 0.02);
+        activeOscillators.push({ osc, gain });
+      });
+
+      const totalMs = Math.ceil((pcs.length * gap + noteDur) * 1000) + 120;
+      audioStopTimer = setTimeout(() => {
+        try { stopAudio(); } catch (e) {}
+      }, totalMs);
+    }
+
+    function renderApp() {
+      const pcs = parsePitchClasses(document.getElementById('pcInput').value);
+      const pf = primeForm(pcs);
+      const iv = intervalVector(pcs);
+      const no = normalOrder(pcs);
+      const comp = complement(pcs);
+      const zMates = zRelationCandidates(pcs, 8);
+
+      const info = [
+        ['入力集合', formatSet(pcs)],
+        ['Cardinality', String(pcs.length)],
+        ['Normal order', formatPrime(no)],
+        ['Prime form', formatPrime(pf)],
+        ['Forteラベル', forteLikeLabel(pf)],
+        ['Complement', formatSet(comp)]
+      ];
+
+      const infoList = document.getElementById('infoList');
+      infoList.innerHTML = info.map(([k, v]) => `<div class="info-item"><strong>${k}:</strong> <span>${v}</span></div>`).join('');
+
+      renderClock(pcs);
+      renderStaffNotation(pcs);
+
+      const tension = iv[0] * 2 + iv[1] * 1.5 + iv[5] * 1.2;
+      const consonant = iv[2] * 1.2 + iv[3] * 1.6 + iv[4] * 1.1;
+      const symmetry = Math.abs(iv[0] - iv[4]) + Math.abs(iv[1] - iv[3]) + Math.abs((pcs.length % 2) - 0.5);
+      const roughnessScore = Math.min(100, Math.round((tension / Math.max(1, pcs.length)) * 18));
+      const opennessScore = Math.min(100, Math.round((consonant / Math.max(1, pcs.length)) * 20));
+      const symmetryScore = Math.max(0, Math.min(100, 100 - Math.round(symmetry * 14)));
+
+      const metrics = [
+        ['緊張 / roughness', roughnessScore],
+        ['開放 / consonant spread', opennessScore],
+        ['対称 / symmetry', symmetryScore]
+      ];
+      document.getElementById('metrics').innerHTML = metrics.map(([label, value]) => `
+        <div class="metric">
+          <div class="metric-head"><span>${label}</span><strong>${value}</strong></div>
+          <div class="track"><div class="fill" style="width:${value}%"></div></div>
+        </div>
+      `).join('');
+
+      document.getElementById('ivBadges').innerHTML = iv.map((v, i) => `<span class="badge">ic${i + 1}: ${v}</span>`).join('');
+      const maxV = Math.max(1, ...iv);
+      document.getElementById('bars').innerHTML = iv.map((v, i) => `
+        <div class="bar-row">
+          <strong>ic${i + 1}</strong>
+          <div class="bar-track"><div class="bar-fill" style="width:${(v / maxV) * 100}%"></div></div>
+          <span>${v}</span>
+        </div>
+      `).join('');
+
+      const zList = document.getElementById('zList');
+      if (!zMates.length) {
+        zList.innerHTML = '<div class="tiny">この集合サイズでは、ここで見つかった代表的な Z-related 候補はありません。</div>';
+      } else {
+        zList.innerHTML = zMates.map((z) => `
+          <div class="zitem">
+            <div><strong>Prime form:</strong> ${formatPrime(z.primeForm)}</div>
+            <div><strong>Example set:</strong> ${formatSet(z.set)}</div>
+            <div><strong>Forteラベル:</strong> ${forteLikeLabel(z.primeForm)}</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    document.getElementById('analyzeBtn').addEventListener('click', renderApp);
+    document.getElementById('playChordBtn').addEventListener('click', async () => {
+      await playPitchClassChord();
+    });
+    document.getElementById('playArpeggioBtn').addEventListener('click', async () => {
+      await playPitchClassArpeggio();
+    });
+    document.getElementById('stopAudioBtn').addEventListener('click', () => {
+      if (audioCtx) stopAudio();
+    });
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      document.getElementById('pcInput').value = '';
+      if (audioCtx) stopAudio();
+      renderApp();
+    });
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      document.getElementById('pcInput').value = '0 1 4 7';
+      if (audioCtx) stopAudio();
+      renderApp();
+    });
+
+    document.querySelectorAll('[data-preset]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.getElementById('pcInput').value = btn.getAttribute('data-preset');
+        renderApp();
+      });
+    });
+
+    document.getElementById('pcInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') renderApp();
+    });
+
+    document.getElementById('downloadHtml').addEventListener('click', () => {
+      const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'index.html';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('copyLinkGuide').addEventListener('click', () => {
+      alert('GitHub Pages手順:\n1. HTMLを index.html として保存\n2. GitHub新規リポジトリ作成\n3. index.html をアップロード\n4. Settings > Pages > Deploy from a branch > main / root\n5. 数十秒後にURL公開');
+    });
+
+    renderApp();
+  </script>
+</body>
+</html>
